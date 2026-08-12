@@ -61,12 +61,62 @@ func main() {
 		fmt.Printf("Version:      %s\n", gpk.Metadata.Version)
 		fmt.Printf("Release:      %d\n", gpk.Metadata.Release)
 		fmt.Printf("Architecture: %s\n", gpk.Metadata.Architecture)
+		if gpk.Metadata.Checksums != nil {
+			fmt.Printf(
+				"Payload SHA-256:  %s\n",
+				gpk.Metadata.Checksums.Payload,
+			)
+
+			fmt.Printf(
+				"Manifest SHA-256: %s\n",
+				gpk.Metadata.Checksums.Manifest,
+			)
+		}
+
+		if gpk.Metadata.Signature != nil {
+			fmt.Printf(
+				"Signature:        %s\n",
+				gpk.Metadata.Signature.Algorithm,
+			)
+
+			fmt.Printf(
+				"Key ID:           %s\n",
+				gpk.Metadata.Signature.KeyID,
+			)
+		}
 
 		fmt.Println("Files:")
 
 		for _, file := range gpk.Manifest.Files {
 			fmt.Printf("  %s\n", file)
 		}
+	case "pkg-verify":
+		if len(os.Args) < 3 {
+			fmt.Println("cakra pkg-verify: missing package")
+			os.Exit(1)
+		}
+
+		publicKey := "keys/cakra-public.key"
+
+		if err := packagefmt.VerifyGPK(
+			os.Args[2],
+			publicKey,
+		); err != nil {
+			fmt.Printf("INVALID: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("OK: package integrity and signature verified")
+	case "keygen":
+		if err := packagefmt.GenerateKeyPair(
+			"keys/cakra-private.key",
+			"keys/cakra-public.key",
+		); err != nil {
+			fmt.Printf("cakra keygen: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("Cakra signing key generated")
 	case "help":
 		usage()
 
