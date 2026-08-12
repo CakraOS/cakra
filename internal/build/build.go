@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/CakraOS/cakra/internal/config"
+	packagefmt "github.com/CakraOS/cakra/internal/package"
 )
 
 func runCommand(command string, dir string, destDir string) error {
@@ -71,6 +72,52 @@ func Run(packageDir string) error {
 
 	fmt.Println("==> Staging complete")
 	fmt.Println(destDir)
+	manifest, err := packagefmt.GenerateManifest(destDir)
+	if err != nil {
+		return fmt.Errorf("generate manifest: %w", err)
+	}
+
+	manifestPath := filepath.Join(buildDir, "manifest")
+
+	if err := manifest.Write(manifestPath); err != nil {
+		return fmt.Errorf("write manifest: %w", err)
+	}
+
+	fmt.Printf("==> Manifest: %s\n", manifestPath)
+	metadata := packagefmt.Metadata{
+		Format:       1,
+		Name:         pkg.Name,
+		Version:      pkg.Version,
+		Release:      pkg.Release,
+		Architecture: pkg.Architecture,
+	}
+
+	outputDir := filepath.Join(rootDir, "output")
+
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return err
+	}
+
+	gpkPath := filepath.Join(
+		outputDir,
+		fmt.Sprintf(
+			"%s-%s-%d-%s.gpk",
+			pkg.Name,
+			pkg.Version,
+			pkg.Release,
+			pkg.Architecture,
+		),
+	)
+
+	if err := packagefmt.BuildGPK(
+		gpkPath,
+		destDir,
+		metadata,
+	); err != nil {
+		return fmt.Errorf("build gpk: %w", err)
+	}
+
+	fmt.Printf("==> GPK: %s\n", gpkPath)
 
 	return nil
 }
