@@ -6,3 +6,4 @@ keys/
 /rootfs/
 rootfs/
 var/
+*bak
