@@ -2,3 +2,7 @@ keys/
 test/
 *.gobak
 /rootfs/
+keys/
+/rootfs/
+rootfs/
+var/

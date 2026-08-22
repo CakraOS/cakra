@@ -6,6 +6,7 @@ import (
 
 	"github.com/CakraOS/cakra/internal/build"
 	packagefmt "github.com/CakraOS/cakra/internal/package"
+	"github.com/CakraOS/cakra/internal/package/db"
 )
 
 const (
@@ -43,7 +44,54 @@ func main() {
 			fmt.Printf("cakra build: %v\n", err)
 			os.Exit(1)
 		}
+	case "pkg-files":
+		if len(os.Args) < 3 {
+			fmt.Println(
+				"cakra pkg-files: missing package name",
+			)
+			os.Exit(1)
+		}
 
+		database := db.New("var/lib/cakra")
+
+		pkg, err := database.Load(os.Args[2])
+		if err != nil {
+			fmt.Printf(
+				"cakra pkg-files: %v\n",
+				err,
+			)
+			os.Exit(1)
+		}
+
+		for _, file := range pkg.Files {
+			fmt.Println(file)
+		}
+	case "pkg-remove":
+		if len(os.Args) < 3 {
+			fmt.Println(
+				"cakra pkg-remove: missing package name",
+			)
+			os.Exit(1)
+		}
+
+		root := "rootfs"
+		dbRoot := "var/lib/cakra"
+
+		if err := packagefmt.Remove(
+			os.Args[2],
+			root,
+			dbRoot,
+		); err != nil {
+			fmt.Printf(
+				"cakra pkg-remove: %v\n",
+				err,
+			)
+			os.Exit(1)
+		}
+
+		fmt.Println(
+			"OK: package removed",
+		)
 	case "pkg-info":
 		if len(os.Args) < 3 {
 			fmt.Println("cakra pkg-info: missing package")
@@ -117,6 +165,90 @@ func main() {
 		}
 
 		fmt.Println("Cakra signing key generated")
+	/*case "pkg-install":
+	if len(os.Args) < 3 {
+		fmt.Println(
+			"cakra pkg-install: missing package",
+		)
+		os.Exit(1)
+	}
+
+	root := "rootfs"
+	publicKey := "keys/cakra-public.key"
+
+	if err := packagefmt.Install(
+		os.Args[2],
+		root,
+		publicKey,
+	); err != nil {
+		fmt.Printf(
+			"cakra pkg-install: %v\n",
+			err,
+		)
+		os.Exit(1)
+	}
+
+	fmt.Println(
+		"OK: package installed",
+	)
+	*/
+	case "pkg-list":
+		database := db.New("var/lib/cakra")
+
+		packages, err := database.List()
+		if err != nil {
+			fmt.Printf(
+				"cakra pkg-list: %v\n",
+				err,
+			)
+			os.Exit(1)
+		}
+
+		fmt.Printf(
+			"%-16s %-12s %-8s %s\n",
+			"NAME",
+			"VERSION",
+			"RELEASE",
+			"ARCH",
+		)
+
+		for _, pkg := range packages {
+			fmt.Printf(
+				"%-16s %-12s %-8d %s\n",
+				pkg.Name,
+				pkg.Version,
+				pkg.Release,
+				pkg.Architecture,
+			)
+		}
+	case "pkg-install":
+		if len(os.Args) < 3 {
+			fmt.Println(
+				"cakra pkg-install: missing package",
+			)
+			os.Exit(1)
+		}
+
+		root := "rootfs"
+		dbRoot := "var/lib/cakra"
+		publicKey := "keys/cakra-public.key"
+
+		if err := packagefmt.Install(
+			os.Args[2],
+			root,
+			publicKey,
+			dbRoot,
+		); err != nil {
+			fmt.Printf(
+				"cakra pkg-install: %v\n",
+				err,
+			)
+			os.Exit(1)
+		}
+
+		fmt.Println(
+			"OK: package installed",
+		)
 	case "help":
 		usage()
 
