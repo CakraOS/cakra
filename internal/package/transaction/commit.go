@@ -9,15 +9,28 @@ import (
 
 var commitHook func(src, dst string) error
 
-type Journal struct {
-	CreatedFiles []string
-	CreatedDirs  []string
-	Backups      []Backup
-}
+/*
+	type Journal struct {
+		CreatedFiles []string
+		CreatedDirs  []string
+		Backups      []Backup
+	}
 
+	type Backup struct {
+		Original string
+		Backup   string
+	}
+*/
+type Journal struct {
+	CreatedFiles []string `json:"created_files"`
+	CreatedDirs  []string `json:"created_dirs"`
+	Backups      []Backup `json:"backups"`
+
+	Path string `json:"-"`
+}
 type Backup struct {
-	Original string
-	Backup   string
+	Original string `json:"original"`
+	Backup   string `json:"backup"`
 }
 
 func Commit(
@@ -25,7 +38,9 @@ func Commit(
 	root string,
 	backupDir string,
 ) (*Journal, error) {
-	journal := &Journal{}
+	journal := &Journal{
+		Path: journalPath(filepath.Dir(backupDir)),
+	}
 
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return journal, fmt.Errorf(
@@ -157,6 +172,17 @@ func ensureDirectory(
 		journal.CreatedDirs,
 		path,
 	)
+	if journal.Path != "" {
+		if err := writeJournal(
+			journal.Path,
+			journal,
+		); err != nil {
+			return fmt.Errorf(
+				"persist created directory journal: %w",
+				err,
+			)
+		}
+	}
 
 	return nil
 }
@@ -224,6 +250,17 @@ func copyFile(
 			journal.CreatedFiles,
 			dst,
 		)
+	}
+	if journal.Path != "" {
+		if err := writeJournal(
+			journal.Path,
+			journal,
+		); err != nil {
+			return fmt.Errorf(
+				"persist file journal: %w",
+				err,
+			)
+		}
 	}
 	if commitHook != nil {
 		if err := commitHook(src, dst); err != nil {

@@ -131,6 +131,12 @@ func installPackage(
 			)
 		}
 	*/
+	if err := RecoverTransactions(""); err != nil {
+		return fmt.Errorf(
+			"recover incomplete transactions: %w",
+			err,
+		)
+	}
 	txnBase := filepath.Join(
 		"tmp",
 		"cakra",
