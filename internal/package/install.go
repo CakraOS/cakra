@@ -10,57 +10,29 @@ import (
 	"github.com/CakraOS/cakra/internal/package/transaction"
 )
 
-/*
-func Install(
-
-	gpkPath string,
-	root string,
-	publicKey string,
-
-	) error {
-		if err := VerifyGPK(
-			gpkPath,
-			publicKey,
-		); err != nil {
-			return fmt.Errorf(
-				"verification failed: %w",
-				err,
-			)
-		}
-
-		gpk, err := ReadGPK(gpkPath)
-		if err != nil {
-			return err
-		}
-
-		if err := os.MkdirAll(
-			root,
-			0o755,
-		); err != nil {
-			return err
-		}
-
-		if err := ExtractPayload(
-			gpk.Payload,
-			root,
-		); err != nil {
-			return fmt.Errorf(
-				"extract payload: %w",
-				err,
-			)
-		}
-		packageFiles := make([]string, len(gpk.Manifest.Files))
-
-		copy(packageFiles, gpk.Manifest.Files)
-
-		return nil
-	}
-*/
 func Install(
 	gpkPath string,
 	root string,
 	publicKey string,
 	dbRoot string,
+) error {
+	database := db.New(dbRoot)
+
+	return installPackage(
+		gpkPath,
+		root,
+		publicKey,
+		database,
+		database.Save,
+	)
+}
+
+func installPackage(
+	gpkPath string,
+	root string,
+	publicKey string,
+	database *db.Database,
+	save func(db.Package) error,
 ) error {
 	if err := VerifyGPK(
 		gpkPath,
@@ -83,7 +55,7 @@ func Install(
 	); err != nil {
 		return err
 	}
-	database := db.New(dbRoot)
+	//database := db.New(dbRoot)
 	installed := db.Package{
 		Name:         gpk.Metadata.Name,
 		Version:      gpk.Metadata.Version,
@@ -214,7 +186,7 @@ func Install(
 		)
 	}
 
-	if err := database.Save(installed); err != nil {
+	if err := save(installed); err != nil {
 		rollbackErr := tx.Rollback()
 
 		if rollbackErr != nil {
