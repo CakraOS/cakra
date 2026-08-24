@@ -168,6 +168,12 @@ func installPackage(
 			err,
 		)
 	}
+	if err := tx.MarkStaged(); err != nil {
+		return fmt.Errorf(
+			"mark transaction staged: %w",
+			err,
+		)
+	}
 
 	if err := tx.Commit(); err != nil {
 		rollbackErr := tx.Rollback()
@@ -187,6 +193,14 @@ func installPackage(
 	}
 
 	if err := save(installed); err != nil {
+		if markErr := tx.MarkFailed(); markErr != nil {
+			return fmt.Errorf(
+				"save package database failed: %v; mark transaction failed: %w",
+				err,
+				markErr,
+			)
+		}
+
 		rollbackErr := tx.Rollback()
 
 		if rollbackErr != nil {

@@ -13,6 +13,7 @@ type Workspace struct {
 	Root    string
 	Staging string
 	Backup  string
+	State   State
 }
 
 func NewWorkspace(
@@ -78,10 +79,23 @@ func NewWorkspace(
 		)
 	}
 
+	if err := writeState(
+		root,
+		StateCreated,
+	); err != nil {
+		os.RemoveAll(root)
+
+		return nil, fmt.Errorf(
+			"create transaction state: %w",
+			err,
+		)
+	}
+
 	return &Workspace{
 		Root:    root,
 		Staging: staging,
 		Backup:  backup,
+		State:   StateCreated,
 	}, nil
 }
 

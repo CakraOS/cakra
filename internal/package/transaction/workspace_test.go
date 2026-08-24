@@ -251,3 +251,46 @@ func TestWorkspaceTransaction(t *testing.T) {
 		)
 	}
 }
+
+func TestNewWorkspaceCreatesPersistentState(t *testing.T) {
+	parent := t.TempDir()
+
+	workspace, err := NewWorkspace(parent)
+	if err != nil {
+		t.Fatalf(
+			"create workspace failed: %v",
+			err,
+		)
+	}
+
+	state, err := readState(workspace.Root)
+	if err != nil {
+		t.Fatalf(
+			"read workspace state: %v",
+			err,
+		)
+	}
+
+	if state != StateCreated {
+		t.Fatalf(
+			"expected state %q, got %q",
+			StateCreated,
+			state,
+		)
+	}
+
+	if workspace.State != StateCreated {
+		t.Fatalf(
+			"expected workspace state %q, got %q",
+			StateCreated,
+			workspace.State,
+		)
+	}
+
+	if err := workspace.Cleanup(); err != nil {
+		t.Fatalf(
+			"cleanup failed: %v",
+			err,
+		)
+	}
+}
